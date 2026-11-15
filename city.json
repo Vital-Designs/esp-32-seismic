@@ -1,0 +1,57 @@
+{
+  "name": "Sample City",
+  "note": "Made-up numbers for the simulation. Replace them with your own city or town.",
+  "resources": {
+    "ambulances": 40,
+    "rescue_teams": 12,
+    "fire_engines": 18,
+    "heavy_machinery": 6,
+    "police_vehicles": 25,
+    "evacuation_buses": 15,
+    "relief_trucks": 12,
+    "water_tankers": 10,
+    "rescue_boats": 5,
+    "helicopters": 2,
+    "hospital_beds": 600,
+    "medical_kits": 400,
+    "blood_units": 300,
+    "water_liters": 200000,
+    "food_packs": 15000,
+    "shelter_beds": 3000,
+    "tents": 800,
+    "blankets": 6000,
+    "clothing_sets": 5000
+  },
+  "districts": [
+    {
+      "name": "Harbor",
+      "population": 80000,
+      "vulnerability": 1.4,
+      "note": "old masonry buildings, near the coast, soft soil"
+    },
+    {
+      "name": "Old Town",
+      "population": 60000,
+      "vulnerability": 1.5,
+      "note": "dense, narrow streets, many pre-1980 buildings"
+    },
+    {
+      "name": "Midtown",
+      "population": 120000,
+      "vulnerability": 1.0,
+      "note": "mixed concrete mid-rises, main hospitals"
+    },
+    {
+      "name": "Hillside",
+      "population": 45000,
+      "vulnerability": 0.9,
+      "note": "newer homes, landslide risk on slopes"
+    },
+    {
+      "name": "Industrial Zone",
+      "population": 25000,
+      "vulnerability": 1.2,
+      "note": "factories, fuel storage, fire risk"
+    }
+  ]
+}

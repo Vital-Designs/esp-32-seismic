@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quake Planner</title>
+<style>
+  :root {
+    --bg:#0f1318; --panel:#171d25; --line:#263040; --text:#e8edf3; --muted:#8a97a8;
+    --accent:#4da3ff; --c0:#3ec28f; --c1:#a8cf4a; --c2:#f0c33c; --c3:#f08a3c; --c4:#ea5a4a; --c5:#c2338f;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg:#f2f5f9; --panel:#ffffff; --line:#d9e0ea; --text:#17202b; --muted:#5d6b7c; --accent:#1769c9; }
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; }
+  header { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--line); }
+  h1 { font-size:18px; margin:0; letter-spacing:.2px; }
+  h2 { font-size:13px; margin:0 0 10px; color:var(--muted); text-transform:uppercase; letter-spacing:.8px; font-weight:600; }
+  main { max-width:1000px; margin:0 auto; padding:16px; display:grid; gap:14px; grid-template-columns:minmax(0,1fr); }
+  .pills { display:flex; gap:8px; flex-wrap:wrap; }
+  .pill { font-size:12px; padding:3px 10px; border-radius:999px; border:1px solid var(--line); }
+  .pill.on { color:var(--c0); border-color:var(--c0); } .pill.off { color:var(--muted); }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; }
+  .card, .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .lbl { font-size:12px; color:var(--muted); }
+  .big { font-size:30px; font-weight:700; line-height:1.2; margin-top:2px; font-variant-numeric:tabular-nums; }
+  .sub { font-size:12px; color:var(--muted); min-height:18px; }
+  canvas { width:100%; height:180px; display:block; }
+  .c0{color:var(--c0)} .c1{color:var(--c1)} .c2{color:var(--c2)} .c3{color:var(--c3)} .c4{color:var(--c4)} .c5{color:var(--c5)}
+  .tag { display:inline-block; font-size:11px; padding:2px 8px; border-radius:6px; background:var(--line); color:var(--muted); margin-left:6px; vertical-align:middle; }
+  .headline { font-size:18px; font-weight:650; margin:0 0 6px; }
+  p { margin:6px 0; }
+  .scroll { overflow-x:auto; margin-top:10px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; min-width:640px; }
+  th, td { text-align:right; padding:6px 6px; border-bottom:1px solid var(--line); white-space:nowrap; }
+  th { white-space:normal; vertical-align:bottom; line-height:1.2; }
+  th:first-child, td:first-child, th:last-child, td:last-child { text-align:left; }
+  td:last-child { white-space:normal; min-width:150px; color:var(--muted); }
+  th { color:var(--muted); font-weight:600; font-size:12px; }
+  tr.total td { font-weight:650; border-top:2px solid var(--line); }
+  .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  input[type=range] { flex:1 1 220px; accent-color:var(--accent); }
+  button { background:var(--accent); color:#fff; border:0; border-radius:8px; padding:9px 16px; font:inherit; font-weight:600; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:default; }
+  .list { display:grid; gap:6px; }
+  .item > :last-child { flex-shrink:0; }
+  .item { display:flex; gap:10px; align-items:center; justify-content:space-between; background:transparent; color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 12px; font-weight:400; text-align:left; width:100%; }
+  .item.sel { border-color:var(--accent); }
+  .muted { color:var(--muted); }
+  #toast { position:fixed; left:50%; bottom:18px; transform:translateX(-50%); background:var(--panel); border:1px solid var(--line); padding:8px 14px; border-radius:8px; font-size:13px; opacity:0; transition:opacity .2s; pointer-events:none; max-width:90vw; }
+  #toast.show { opacity:1; }
+  #distTable th, #distTable td { text-align:left; white-space:normal; }
+  #distTable td input { min-width:90px; }
+  #distTable td:last-child { min-width:0; }
+  #frTable th, #frTable td { text-align:left; }
+  .tabs { display:flex; gap:6px; flex-wrap:wrap; margin:10px 0 4px; }
+  .tab { background:transparent; color:var(--muted); border:1px solid var(--line); padding:6px 12px; border-radius:8px; font-weight:600; }
+  .tab.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  h3 { font-size:14px; margin:18px 0 8px; }
+  details > summary { cursor:pointer; color:var(--accent); font-weight:600; }
+  .grid2 { display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); }
+  .field label { display:block; font-size:12px; color:var(--muted); margin-bottom:3px; }
+  .field .hint { font-size:11px; color:var(--muted); margin-top:3px; }
+  input[type=number], input[type=text], input[type=password], select, textarea { width:100%; background:var(--bg); color:var(--text); border:1px solid var(--line); border-radius:8px; padding:8px 10px; font:inherit; }
+  textarea { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; min-height:240px; }
+  .check { display:flex; gap:8px; align-items:center; font-size:14px; color:var(--text) !important; }
+  .flash { animation:flash .8s ease 3; }
+  .banner { display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  .banner.wait { border-color:var(--c2); } .banner.demo { border-color:var(--accent); } .banner.dev { border-color:var(--c0); }
+  .banner .muted { font-size:13px; word-break:break-all; }
+  .dots::after { content:''; animation:dots 1.4s steps(4) infinite; }
+  @keyframes dots { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
+  button.ghost { background:transparent; color:var(--text); border:1px solid var(--line); }
+  .presets { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+  .sliders { display:grid; gap:10px; margin-bottom:12px; }
+  .sliders label { display:flex; flex-wrap:wrap; align-items:center; gap:4px 12px; font-size:13px; }
+  .sliders label span { min-width:150px; color:var(--muted); }
+  @keyframes flash { 50% { box-shadow:0 0 0 3px var(--c4); } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Quake Resource Planner</h1>
+  <div class="pills">
+    <span id="devPill" class="pill off">sensor offline</span>
+    <span id="connPill" class="pill off">connecting…</span>
+    <span id="aiPill" class="pill off">AI: …</span>
+  </div>
+</header>
+
+<main>
+  <section id="banner" class="panel banner wait">
+    <div><b id="bannerTitle">Waiting for the ESP32 to connect</b><div id="bannerSub" class="muted"></div></div>
+    <button id="demoBtn" class="ghost">Start virtual sensor</button>
+  </section>
+
+  <section class="cards">
+    <div class="card" id="liveCard"><div class="lbl">Live shaking</div><div class="big" id="liveG">–</div><div class="sub" id="liveSub">waiting for sensor</div></div>
+    <div class="card"><div class="lbl">STA/LTA ratio</div><div class="big" id="ratio">–</div><div class="sub">triggers at ≥ <span id="trigAt">4</span></div></div>
+    <div class="card"><div class="lbl">Last event intensity</div><div class="big" id="mmi">–</div><div class="sub" id="tier">no events yet</div></div>
+    <div class="card"><div class="lbl">Peak ground accel.</div><div class="big" id="pga">–</div><div class="sub" id="pgaSub">&nbsp;</div></div>
+  </section>
+
+  <section class="panel">
+    <h2 id="chartTitle">Live signal, last 30 s (g, gravity removed)</h2>
+    <div class="tabs" style="margin-top:0"><button id="tabLive" class="tab on">Live sensor</button><button id="tabSim" class="tab">Simulated shake</button></div>
+    <div id="chartNote" class="muted" style="font-size:12px;min-height:18px"></div>
+    <canvas id="chart"></canvas>
+  </section>
+
+  <section class="panel" id="eventPanel">
+    <h2>Situation report <span id="srcTag" class="tag" hidden></span></h2>
+    <div id="eventBody" class="muted">No events yet. Shake the sensor, or press "Simulate" below.</div>
+  </section>
+
+  <section class="panel">
+    <h2>Report a specific issue</h2>
+    <div class="grid2">
+      <div class="field"><label for="iDist">District</label><select id="iDist"></select></div>
+      <div class="field"><label for="iUrg">Urgency</label><select id="iUrg"><option value="critical">Critical (life at risk)</option><option value="high" selected>High</option><option value="medium">Medium</option><option value="low">Low</option></select></div>
+      <div class="field"><label for="iPeople">People involved</label><input id="iPeople" type="number" min="1" max="1000" value="1"></div>
+    </div>
+    <div class="field" style="margin-top:10px"><label for="iDesc">What is happening?</label><textarea id="iDesc" maxlength="300" style="min-height:70px" placeholder="e.g. One person trapped under the concrete debris of a collapsed house, conscious and calling for help"></textarea></div>
+    <div class="row" style="margin-top:10px"><button id="iAdd">Add issue</button><button id="iPlan" class="ghost">Update plan with these issues</button></div>
+    <p class="muted" style="font-size:12px">The AI counts open issues when it plans resources. After adding or resolving issues, press "Update plan".</p>
+    <div id="iList" class="list"></div>
+  </section>
+
+  <section class="panel">
+    <h2>Real numbers from the field</h2>
+    <p class="muted" style="font-size:13px;margin-top:0">Know how many people are really affected or injured? Enter them here and they replace the rough estimate. Leave a box blank to keep the estimate.</p>
+    <div class="scroll"><table id="frTable" style="min-width:420px"><thead><tr><th>District</th><th>People affected</th><th>People injured</th></tr></thead><tbody id="frBody"></tbody></table></div>
+    <div class="row" style="margin-top:10px"><button id="frSave">Save numbers</button><button id="frPlan" class="ghost">Save and update plan</button><button id="frClear" class="ghost">Clear all</button></div>
+  </section>
+
+  <section class="panel">
+    <h2>Custom trigger</h2>
+    <div class="presets">
+      <button class="ghost" data-p="0.03,8,4">Light</button>
+      <button class="ghost" data-p="0.08,10,3">Moderate</button>
+      <button class="ghost" data-p="0.2,15,3">Strong</button>
+      <button class="ghost" data-p="0.5,25,2">Severe</button>
+    </div>
+    <div class="sliders">
+      <label>Shaking strength <span id="vP"></span><input id="sP" type="range" min="0" max="100" value="60"></label>
+      <label>Duration <span id="vD"></span><input id="sD" type="range" min="3" max="60" value="10"></label>
+      <label>Frequency <span id="vF"></span><input id="sF" type="range" min="5" max="150" value="30"></label>
+    </div>
+    <div class="row"><button id="simBtn">Trigger earthquake</button><span id="simHint" class="muted" style="font-size:12px"></span></div>
+  </section>
+
+  <section class="panel">
+    <h2>Your city data</h2>
+    <details id="cityData" open>
+      <summary>What you have: resources and districts</summary>
+      <div id="pw2Row" class="field" hidden><label>Admin password</label><input id="pw2" type="password" autocomplete="off"></div>
+      <div class="field" style="margin-top:10px"><label for="cName">City name</label><input id="cName" type="text" maxlength="60"></div>
+      <div id="resForm"></div>
+      <h3>Districts</h3>
+      <div class="scroll"><table id="distTable" style="min-width:600px"><thead><tr><th>Name</th><th>Population</th><th>Vulnerability</th><th>Note (helps the AI)</th><th></th></tr></thead><tbody id="distBody"></tbody></table></div>
+      <div class="hint" style="margin-top:6px">Vulnerability: 0.7 = strong modern buildings, 1 = average, 1.5 = old or weak, up to 3.</div>
+      <div class="row" style="margin-top:10px"><button id="addDist" class="ghost">Add district</button><button id="saveCity">Save city data</button></div>
+    </details>
+  </section>
+
+  <section class="panel">
+    <h2>Settings</h2>
+    <details id="settings">
+      <summary>Sensor sensitivity, AI and city data</summary>
+      <p id="adminWarn" class="muted" style="font-size:12px"></p>
+      <div id="pwRow" class="field" hidden><label>Admin password</label><input id="pw" type="password" autocomplete="off"></div>
+
+      <h3>Sensor sensitivity</h3>
+      <div class="presets">
+        <button class="ghost" data-s="3,0.005,2">Sensitive</button>
+        <button class="ghost" data-s="4,0.01,3">Normal</button>
+        <button class="ghost" data-s="6,0.03,5">Strict</button>
+      </div>
+      <div class="grid2">
+        <div class="field"><label for="fRatio">Trigger ratio (STA/LTA)</label><input id="fRatio" type="number" step="0.5" min="1.5" max="20"><div class="hint">Lower = more sensitive. How much stronger than the background the shaking must get.</div></div>
+        <div class="field"><label for="fMinG">Minimum shaking (g)</label><input id="fMinG" type="number" step="0.001" min="0.001" max="1"><div class="hint">Weaker shaking never triggers. The MPU6050 measures acceleration (g), not pressure, so this is the "how hard must it shake" setting.</div></div>
+        <div class="field"><label for="fMinEv">Ignore shaking shorter than (s)</label><input id="fMinEv" type="number" step="0.5" min="0" max="30"><div class="hint">Filters door slams and bumps.</div></div>
+      </div>
+
+      <h3>AI report and suggestions</h3>
+      <div class="grid2">
+        <div class="field"><label class="check"><input id="fAiOn" type="checkbox"> Use the AI (otherwise simple built-in rules)</label></div>
+        <div class="field"><label for="fAiMmi">Use the AI from intensity (MMI)</label><input id="fAiMmi" type="number" step="0.5" min="1" max="10"><div class="hint">Weaker events use the built-in rules, which saves your free quota.</div></div>
+        <div class="field"><label for="fModel">OpenRouter model</label><input id="fModel" type="text" placeholder="openrouter/free"><div class="hint">openrouter/free picks a random free model each time.</div></div>
+        <div class="field"><label for="fKey">OpenRouter API key</label><input id="fKey" type="password" autocomplete="off"><label class="check" style="margin-top:6px"><input id="fClear" type="checkbox"> Remove the saved key</label><div class="hint">Stored on the server only; never sent back to the page.</div></div>
+      </div>
+      <div class="row" style="margin-top:10px"><button id="testBtn" class="ghost">Test the AI</button></div>
+
+
+      <div class="row" style="margin-top:14px"><button id="saveBtn">Save settings</button><span class="muted" style="font-size:12px">Applies immediately, no restart.</span></div>
+    </details>
+  </section>
+
+  <section class="panel">
+    <h2>Event history</h2>
+    <div id="history" class="list"><span class="muted">Nothing yet.</span></div>
+  </section>
+</main>
+<div id="toast"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const ROMAN = ['', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+const TABS = [
+  { id: 'emergency', label: 'Emergency support', keys: [['ambulances', 'Ambulances'], ['rescue_teams', 'Rescue teams'], ['fire_engines', 'Fire engines'], ['heavy_machinery', 'Cranes / excavators'],
+    ['police_vehicles', 'Police vehicles'], ['evacuation_buses', 'Evacuation buses'], ['relief_trucks', 'Relief trucks'], ['water_tankers', 'Water tankers'], ['rescue_boats', 'Rescue boats'], ['helicopters', 'Helicopters']] },
+  { id: 'provisions', label: 'Provisions', keys: [['water_liters', 'Water (L)'], ['food_packs', 'Food packs'], ['shelter_beds', 'Shelter beds'], ['tents', 'Tents'], ['blankets', 'Blankets'], ['clothing_sets', 'Clothing sets']] },
+  { id: 'medical', label: 'Medical', keys: [['hospital_beds', 'Hospital beds'], ['medical_kits', 'Medical kits'], ['blood_units', 'Blood units']] },
+];
+let tab = 'emergency';
+const MAXBUF = 3000; // 30 s at 100 Hz
+let chartTab = 'live', simBuf = [], simTotal = 0, simMeta = null, fieldReports = {}, cityFull = null, cityTouched = false;
+let mode = 'waiting', buf = [], events = [], selected = null, cfg = { minStaG: 0.01 }, city = null, lastLive = 0, ws;
+
+const el = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
+const mmiClass = (m) => (m < 4 ? 'c0' : m < 5 ? 'c1' : m < 6 ? 'c2' : m < 7 ? 'c3' : m < 8 ? 'c4' : 'c5');
+const roman = (m) => ROMAN[Math.min(10, Math.max(1, Math.round(m)))];
+const fmt = (n) => Number(n).toLocaleString('en-US');
+function toast(t) { const e = $('toast'); e.textContent = t; e.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => e.classList.remove('show'), 3500); }
+function pill(id, on, text) { const e = $(id); e.className = 'pill ' + (on ? 'on' : 'off'); e.textContent = text; }
+
+// same relation as the server (Worden et al. 2012), only used for the slider label
+function mmiFromPgaG(g) { const l = Math.log10(Math.max(g * 980.665, 0.01)); return Math.min(10, Math.max(1, l <= 1.57 ? 1.78 + 1.55 * l : -1.6 + 3.7 * l)); }
+const sliderG = () => Math.pow(10, -1.7 + 1.7 * ($('sP').value / 100)); // 0.02 g .. 1 g
+function updateSimLabel() {
+  const g = sliderG();
+  $('vP').textContent = `${g.toFixed(3)} g ≈ MMI ${roman(mmiFromPgaG(g))}`;
+  $('vD').textContent = $('sD').value + ' s';
+  $('vF').textContent = ($('sF').value / 10).toFixed(1) + ' Hz';
+}
+
+function setMode(m) {
+  mode = m; buf = []; draw();
+  const t = $('bannerTitle'), s = $('bannerSub'), d = $('demoBtn');
+  $('banner').className = 'panel banner ' + (m === 'device' ? 'dev' : m === 'demo' ? 'demo' : 'wait');
+  const url = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/esp?token=YOUR_TOKEN`;
+  if (m === 'device') {
+    t.textContent = 'ESP32 connected: live data'; t.className = ''; s.textContent = 'Streaming from your sensor.'; d.hidden = true;
+  } else if (m === 'demo') {
+    t.textContent = 'Virtual sensor running (simulated data)'; t.className = '';
+    s.textContent = 'Plug in the ESP32 and it takes over automatically.'; d.hidden = false; d.textContent = 'Stop virtual sensor';
+  } else {
+    t.textContent = 'Waiting for the ESP32 to connect'; t.className = 'dots';
+    s.textContent = `The ESP32 should connect to ${url}. Until then, use the virtual sensor.`; d.hidden = false; d.textContent = 'Start virtual sensor';
+  }
+  pill('devPill', m !== 'waiting', m === 'device' ? 'sensor online' : m === 'demo' ? 'virtual sensor' : 'waiting for sensor');
+  $('liveG').textContent = '–'; $('ratio').textContent = '–';
+  $('liveSub').textContent = m === 'waiting' ? 'waiting for sensor' : '…';
+  $('simHint').textContent = 'Fires instantly. Works with or without a sensor, and beeps the ESP32 if one is connected.';
+}
+
+// ------------------------------------------------ websocket
+function connect() {
+  ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ui`);
+  ws.onopen = () => pill('connPill', true, 'server connected');
+  ws.onclose = () => { pill('connPill', false, 'reconnecting…'); pill('devPill', false, 'unknown'); setTimeout(connect, 2000); };
+  ws.onmessage = (e) => { let m; try { m = JSON.parse(e.data); } catch (_) { return; } onMsg(m); };
+}
+
+let incidents = [];
+const URG = { critical: 'c4', high: 'c3', medium: 'c2', low: 'c0' };
+const send = (o) => { if (!ws || ws.readyState !== 1) { toast('Not connected to the server'); return false; } ws.send(JSON.stringify(o)); return true; };
+function renderIncidents() {
+  const box = $('iList'); box.replaceChildren();
+  if (!incidents.length) { box.append(el('span', 'No open issues.', 'muted')); return; }
+  for (const i of incidents) {
+    const row = el('div', undefined, 'item'), left = el('div'), right = el('div');
+    left.append(el('b', `${i.district || 'District not set'} · ${i.people} ${i.people === 1 ? 'person' : 'people'}`), el('div', i.description, 'muted'));
+    right.style.cssText = 'display:flex;gap:10px;align-items:center';
+    const done = el('button', 'Resolve', 'ghost'); done.onclick = () => send({ type: 'incident_remove', id: i.id });
+    right.append(el('span', i.urgency, URG[i.urgency] || ''), done);
+    row.append(left, right); box.append(row);
+  }
+}
+
+const getPw = () => $('pw2').value || $('pw').value;
+
+function buildResForm(resources) {
+  const box = $('resForm'); box.replaceChildren();
+  for (const t of TABS) {
+    box.append(el('h3', t.label));
+    const g = el('div', undefined, 'grid2');
+    for (const [k, label] of t.keys) {
+      const f = el('div', undefined, 'field'), lab = el('label', label), inp = el('input');
+      lab.htmlFor = 'r_' + k; inp.type = 'number'; inp.min = 0; inp.step = 1; inp.id = 'r_' + k; inp.value = resources[k] !== undefined ? resources[k] : 0;
+      f.append(lab, inp); g.append(f);
+    }
+    box.append(g);
+  }
+}
+function addDistRow(d) {
+  const tr = el('tr');
+  const mk = (type, val, attrs) => { const td = el('td'), i = el('input'); i.type = type; i.value = val; Object.assign(i, attrs || {}); td.append(i); tr.append(td); };
+  mk('text', d.name, { maxLength: 60 }); mk('number', d.population, { min: 0, step: 1 }); mk('number', d.vulnerability, { min: 0.1, max: 3, step: 0.1 }); mk('text', d.note || '', { maxLength: 200 });
+  const td = el('td'), b = el('button', 'Remove', 'ghost'); b.onclick = () => { tr.remove(); cityTouched = true; }; td.append(b); tr.append(td);
+  $('distBody').append(tr);
+}
+function fillCityForm(cf) {
+  $('cName').value = cf.name; buildResForm(cf.resources);
+  $('distBody').replaceChildren(); cf.districts.forEach(addDistRow);
+}
+function readCityForm() {
+  const resources = {};
+  for (const t of TABS) for (const [k] of t.keys) resources[k] = Number($('r_' + k).value);
+  const districts = [...$('distBody').rows].map((tr) => { const i = tr.querySelectorAll('input'); return { name: i[0].value, population: Number(i[1].value), vulnerability: Number(i[2].value), note: i[3].value }; });
+  return { name: $('cName').value, resources, districts };
+}
+function renderField() {
+  const body = $('frBody'); body.replaceChildren();
+  for (const d of (cityFull ? cityFull.districts : [])) {
+    const fr = fieldReports[d.name] || {}, tr = el('tr'), mk = (v) => { const td = el('td'), i = el('input'); i.type = 'number'; i.min = 0; i.step = 1; i.placeholder = 'rough estimate'; i.value = v == null ? '' : v; td.append(i); tr.append(td); };
+    tr.append(el('td', d.name)); mk(fr.affected); mk(fr.injured); body.append(tr);
+  }
+}
+function readField() {
+  const reports = {};
+  for (const tr of $('frBody').rows) { const i = tr.querySelectorAll('input'), a = i[0].value.trim(), n = i[1].value.trim(); if (a !== '' || n !== '') reports[tr.cells[0].textContent] = { affected: a === '' ? null : Number(a), injured: n === '' ? null : Number(n) }; }
+  return reports;
+}
+
+let touched = false;
+function applyConfig(m) {
+  city = m.city; cfg = m.cfg;
+  $('trigAt').textContent = cfg.trigRatio;
+  pill('aiPill', m.ai.enabled, m.ai.enabled ? 'AI on' : m.ai.hasKey ? 'AI off (rules)' : 'AI off (no key)');
+  $('pwRow').hidden = !m.adminLocked; $('pw2Row').hidden = !m.adminLocked; cityFull = m.cityFull;
+  $('adminWarn').textContent = m.adminLocked ? 'Changes need the admin password.' : 'No admin password is set, so anyone with this link can change these. Set ADMIN_PASSWORD on the server before putting it online.';
+  const sel = $('iDist'), keep = sel.value; sel.replaceChildren(new Option('Not sure / whole city', ''));
+  for (const d of m.cityFull.districts) sel.append(new Option(d.name, d.name));
+  sel.value = keep;
+  if (!cityTouched) fillCityForm(m.cityFull);
+  renderField();
+  if (touched) return; // don't overwrite something you are typing
+  $('fRatio').value = cfg.trigRatio; $('fMinG').value = cfg.minStaG; $('fMinEv').value = cfg.minEventS;
+  $('fAiOn').checked = m.ai.on; $('fAiMmi').value = cfg.aiMinMmi; $('fModel').value = m.ai.model;
+  $('fKey').value = ''; $('fKey').placeholder = m.ai.hasKey ? 'saved on the server (leave blank to keep)' : 'sk-or-...'; $('fClear').checked = false;
+}
+
+function onMsg(m) {
+  if (m.type === 'hello') {
+    events = m.events || [];
+    incidents = m.incidents || []; renderIncidents();
+    fieldReports = m.fieldReports || {};
+    applyConfig(m);
+    setMode(m.mode);
+    renderHistory();
+    if (events.length) show(events[0].id);
+  } else if (m.type === 'incidents') {
+    incidents = m.incidents || []; renderIncidents(); if (selected) show(selected);
+  } else if (m.type === 'config') {
+    applyConfig(m); draw(); toast('Settings saved');
+  } else if (m.type === 'source') {
+    setMode(m.mode);
+  } else if (m.type === 'live') {
+    lastLive = Date.now();
+    for (const v of m.mags) buf.push(v);
+    if (buf.length > MAXBUF) buf = buf.slice(buf.length - MAXBUF);
+    const last = m.mags[m.mags.length - 1] || 0;
+    $('liveG').textContent = last.toFixed(3) + ' g';
+    $('liveSub').textContent = m.trig ? 'EVENT IN PROGRESS' : m.warm === false ? 'calibrating…' : 'quiet';
+    $('ratio').textContent = m.ratio.toFixed(1);
+    $('liveCard').classList.toggle('flash', m.trig);
+    draw();
+  } else if (m.type === 'field') {
+    fieldReports = m.reports || {}; renderField(); if (selected) show(selected);
+  } else if (m.type === 'simstart') {
+    simBuf = []; simTotal = m.total; simMeta = m; setChartTab('sim');
+  } else if (m.type === 'simlive') {
+    for (const v of m.mags) simBuf.push(v);
+    updateChartNote(); if (chartTab === 'sim') draw();
+  } else if (m.type === 'trigger') {
+    toast(m.simulated ? 'Simulated trigger' : 'Shaking detected!');
+  } else if (m.type === 'event') {
+    const i = events.findIndex((x) => x.id === m.event.id);
+    if (i >= 0) events[i] = m.event; else events.unshift(m.event);
+    renderHistory();
+    if (i < 0 || selected === m.event.id) show(m.event.id);
+  } else if (m.type === 'notice') {
+    toast(m.text);
+  }
+}
+
+// ------------------------------------------------ chart
+function draw() {
+  const c = $('chart'), dpr = window.devicePixelRatio || 1, w = c.clientWidth, h = c.clientHeight;
+  if (c.width !== Math.round(w * dpr)) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
+  const x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0); x.clearRect(0, 0, w, h);
+  const css = getComputedStyle(document.documentElement);
+  const sim = chartTab === 'sim', data = sim ? simBuf : buf;
+  const max = Math.max(0.05, ...data) * 1.15;
+  const y = (v) => h - 14 - (v / max) * (h - 22);
+  x.font = '11px system-ui'; x.fillStyle = css.getPropertyValue('--muted'); x.strokeStyle = css.getPropertyValue('--line'); x.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) { const v = (max * i) / 4, yy = y(v); x.beginPath(); x.moveTo(0, yy); x.lineTo(w, yy); x.stroke(); x.fillText(v.toFixed(2), 4, yy - 3); }
+  x.setLineDash([5, 4]); x.strokeStyle = css.getPropertyValue('--c3'); x.beginPath(); x.moveTo(0, y(cfg.minStaG)); x.lineTo(w, y(cfg.minStaG)); x.stroke(); x.setLineDash([]);
+  if (!data.length) return;
+  x.strokeStyle = css.getPropertyValue(sim ? '--c2' : '--accent'); x.lineWidth = 1.5; x.beginPath();
+  const total = sim ? Math.max(simTotal, data.length) : MAXBUF, step = w / (total - 1), off = sim ? 0 : MAXBUF - data.length;
+  data.forEach((v, i) => { const px = (off + i) * step; if (i) x.lineTo(px, y(v)); else x.moveTo(px, y(v)); });
+  x.stroke();
+}
+
+function setChartTab(t) {
+  chartTab = t;
+  $('tabLive').className = 'tab' + (t === 'live' ? ' on' : ''); $('tabSim').className = 'tab' + (t === 'sim' ? ' on' : '');
+  $('chartTitle').textContent = t === 'sim' ? 'Simulated shake (what the sensor would have recorded, g)' : 'Live signal, last 30 s (g, gravity removed)';
+  updateChartNote(); draw();
+}
+function updateChartNote() {
+  if (chartTab === 'live') { $('chartNote').textContent = ''; return; }
+  if (!simMeta) { $('chartNote').textContent = 'Press "Trigger earthquake" to see the simulated signal here.'; return; }
+  const peak = simBuf.length ? Math.max(...simBuf) : 0;
+  $('chartNote').textContent = `Simulated: strength ${simMeta.pga} g, ${simMeta.dur} s, ${simMeta.freq} Hz. Peak so far ${peak.toFixed(3)} g.`;
+}
+window.addEventListener('resize', draw);
+setInterval(() => { if (mode !== 'waiting' && lastLive && Date.now() - lastLive > 3000) $('liveSub').textContent = 'no data for 3 s'; }, 1000);
+
+// ------------------------------------------------ events
+function renderHistory() {
+  const box = $('history'); box.replaceChildren();
+  if (!events.length) { box.append(el('span', 'Nothing yet.', 'muted')); return; }
+  for (const ev of events) {
+    const b = el('button', undefined, 'item' + (ev.id === selected ? ' sel' : ''));
+    const left = el('span', new Date(ev.time).toLocaleString());
+    if (ev.simulated) left.append(el('span', 'SIM', 'tag'));
+    const right = el('span', `MMI ${roman(ev.mmi)} · ${ev.pga_g} g · ${ev.tier}`, mmiClass(ev.mmi));
+    b.append(left, right); b.onclick = () => show(ev.id); box.append(b);
+  }
+}
+
+function show(id) {
+  selected = id; renderHistory();
+  const ev = events.find((e) => e.id === id); if (!ev) return;
+  $('mmi').textContent = roman(ev.mmi); $('mmi').className = 'big ' + mmiClass(ev.mmi);
+  $('tier').textContent = ev.tier + (ev.simulated ? ' (simulated)' : '');
+  $('pga').textContent = ev.pga_g + ' g'; $('pgaSub').textContent = `${ev.pga_cms2} cm/s² · ${ev.duration_s} s` + (ev.dominant_freq_hz ? ` · ${ev.dominant_freq_hz} Hz` : '');
+  const body = $('eventBody'); body.className = ''; body.replaceChildren();
+  const src = $('srcTag');
+  if (ev.status !== 'done' || !ev.analysis) { src.hidden = true; body.append(el('p', 'Analysing…', 'muted')); return; }
+  const a = ev.analysis; src.hidden = false; src.textContent = a.source;
+  body.append(el('p', a.headline, 'headline'), el('p', a.report), el('p', a.damage_assessment));
+  if (a.district_impacts && a.district_impacts.length) {
+    const hd = el('h2', 'How each area was affected'); hd.style.marginTop = '14px'; body.append(hd);
+    const list = el('div', undefined, 'list');
+    for (const d of [...a.district_impacts].sort((p, q) => q.severity - p.severity)) {
+      const row = el('div', undefined, 'item'); const left = el('div'); left.append(el('b', d.district), el('div', d.impact, 'muted'));
+      row.append(left, el('span', `Severity ${d.severity}/5`, d.severity >= 4 ? 'c4' : d.severity === 3 ? 'c3' : d.severity === 2 ? 'c2' : 'c0')); list.append(row);
+    }
+    body.append(list);
+  }
+  const pending = incidents.filter((i) => !(ev.incidents || []).some((x) => x.id === i.id));
+  if (pending.length) body.append(el('p', `${pending.length} open issue(s) are not in this plan yet. Press "Update plan with these issues".`, 'c3'));
+  if (ev.incidents && ev.incidents.length) {
+    const ih = el('h2', 'Reported issues'); ih.style.marginTop = '14px'; body.append(ih);
+    const il = el('div', undefined, 'list'), plans = Object.fromEntries((a.incident_plans || []).map((p) => [p.id, p]));
+    for (const inc of ev.incidents) {
+      const p = plans[inc.id], row = el('div', undefined, 'item'), left = el('div');
+      left.append(el('b', `${inc.district || 'District not set'} · ${inc.people} ${inc.people === 1 ? 'person' : 'people'}`), el('div', inc.description), el('div', p ? 'Plan: ' + p.plan : 'No plan yet.', 'muted'));
+      row.append(left, el('span', p ? `Priority ${p.priority}` : '', p && p.priority <= 1 ? 'c4' : p && p.priority === 2 ? 'c3' : 'c2')); il.append(row);
+    }
+    body.append(il);
+  }
+  const rh = el('h2', 'Suggested resource allocation'); rh.style.marginTop = '14px'; body.append(rh);
+  if (a.notes) body.append(el('p', a.notes, 'muted'));
+
+  const tabsEl = el('div', undefined, 'tabs'), panelEl = el('div'); body.append(tabsEl, panelEl);
+  const drawTab = () => {
+    tabsEl.replaceChildren(); panelEl.replaceChildren();
+    for (const t of TABS) { const b = el('button', t.label, 'tab' + (t.id === tab ? ' on' : '')); b.onclick = () => { tab = t.id; drawTab(); }; tabsEl.append(b); }
+    const T = TABS.find((x) => x.id === tab) || TABS[0];
+    const table = el('table'), thead = el('thead'), hr = el('tr');
+    ['District', 'Priority', ...T.keys.map((r) => r[1]), 'Why'].forEach((x) => hr.append(el('th', x)));
+    thead.append(hr); table.append(thead);
+    const tb = el('tbody'), sums = {}; T.keys.forEach(([k]) => (sums[k] = 0));
+    for (const al of [...a.allocations].sort((p, q) => p.priority - q.priority)) {
+      const r = el('tr'); r.append(el('td', al.district), el('td', String(al.priority)));
+      T.keys.forEach(([k]) => { const v = al[k] || 0; sums[k] += v; r.append(el('td', fmt(v))); });
+      r.append(el('td', al.reason)); tb.append(r);
+    }
+    const tot = el('tr', undefined, 'total'); tot.append(el('td', 'Used / available'), el('td', ''));
+    T.keys.forEach(([k]) => tot.append(el('td', `${fmt(sums[k])} / ${fmt((city && city.resources[k]) || 0)}`)));
+    tot.append(el('td', '')); tb.append(tot); table.append(tb);
+    const wrap = el('div', undefined, 'scroll'); wrap.append(table); panelEl.append(wrap);
+  };
+  drawTab();
+
+  if (ev.districts) {
+    const t = ev.districts.reduce((s, d) => ({ a: s.a + d.est_affected, i: s.i + d.est_injured }), { a: 0, i: 0 });
+    const nRep = ev.districts.filter((d) => d.affected_source === 'reported' || d.injured_source === 'reported').length;
+    body.append(el('p', `Across the city: ${fmt(t.a)} people affected, ${fmt(t.i)} injured (${nRep ? nRep + ' of ' + ev.districts.length + ' districts use the real numbers you entered, the rest are rough estimates' : 'all rough estimates'}). The damage model is a toy, not a real one.`, 'muted'));
+  }
+}
+
+['sP', 'sD', 'sF'].forEach((id) => ($(id).oninput = updateSimLabel));
+document.querySelectorAll('[data-p]').forEach((b) => (b.onclick = () => {
+  const [g, d, f] = b.dataset.p.split(',').map(Number);
+  $('sP').value = Math.round(((Math.log10(g) + 1.7) / 1.7) * 100); $('sD').value = d; $('sF').value = f * 10; updateSimLabel();
+}));
+$('simBtn').onclick = () => {
+  if (!ws || ws.readyState !== 1) return toast('Not connected to the server');
+  ws.send(JSON.stringify({ type: 'custom', pga_g: sliderG(), duration_s: Number($('sD').value), freq_hz: $('sF').value / 10 }));
+  $('simBtn').disabled = true; setTimeout(() => ($('simBtn').disabled = false), 3000);
+};
+$('demoBtn').onclick = () => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'demo', on: mode !== 'demo' })); };
+$('settings').addEventListener('input', () => (touched = true));
+document.querySelectorAll('[data-s]').forEach((b) => (b.onclick = () => {
+  const [r, g, e] = b.dataset.s.split(','); $('fRatio').value = r; $('fMinG').value = g; $('fMinEv').value = e; touched = true;
+}));
+$('saveBtn').onclick = () => {
+  if (!ws || ws.readyState !== 1) return toast('Not connected to the server');
+  ws.send(JSON.stringify({ type: 'settings', password: getPw(), values: {
+    trigRatio: $('fRatio').value, minStaG: $('fMinG').value, minEventS: $('fMinEv').value, aiEnabled: $('fAiOn').checked,
+    aiMinMmi: $('fAiMmi').value, aiModel: $('fModel').value, aiKey: $('fKey').value, clearKey: $('fClear').checked } }));
+  touched = false;
+};
+$('testBtn').onclick = () => { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'testai', password: getPw() })); };
+$('tabLive').onclick = () => setChartTab('live');
+$('tabSim').onclick = () => setChartTab('sim');
+$('cityData').addEventListener('input', () => (cityTouched = true));
+$('addDist').onclick = () => { addDistRow({ name: '', population: 10000, vulnerability: 1, note: '' }); cityTouched = true; };
+$('saveCity').onclick = () => { if (send({ type: 'settings', password: getPw(), city: readCityForm() })) cityTouched = false; };
+$('frSave').onclick = () => { if (send({ type: 'field_reports', reports: readField() })) toast('Numbers saved. Press "Update plan" to use them.'); };
+$('frPlan').onclick = () => { if (send({ type: 'field_reports', reports: readField() }) && send({ type: 'replan', id: selected })) toast('Updating the plan…'); };
+$('frClear').onclick = () => { for (const i of $('frBody').querySelectorAll('input')) i.value = ''; send({ type: 'field_reports', reports: {} }); };
+$('iAdd').onclick = () => {
+  const description = $('iDesc').value.trim();
+  if (description.length < 3) return toast('Describe the issue first');
+  if (send({ type: 'incident_add', district: $('iDist').value, description, people: $('iPeople').value, urgency: $('iUrg').value })) {
+    $('iDesc').value = ''; $('iPeople').value = 1; toast('Issue added. Press "Update plan" to include it.');
+  }
+};
+$('iPlan').onclick = () => { if (send({ type: 'replan', id: selected })) toast('Updating the plan…'); };
+updateSimLabel(); setMode('waiting'); connect(); draw();
+</script>
+</body>
+</html>

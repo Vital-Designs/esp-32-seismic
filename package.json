@@ -1,0 +1,15 @@
+{
+  "name": "quake-resource-planner",
+  "version": "1.0.0",
+  "description": "ESP32 + MPU6050 earthquake sensor dashboard with AI resource allocation (hobby project)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
